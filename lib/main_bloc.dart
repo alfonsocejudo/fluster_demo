@@ -24,16 +24,16 @@ class MainBloc {
   /// Markers currently displayed on the map.
   final _markerController = StreamController<Map<MarkerId, Marker>>.broadcast();
 
-  /// Camera position after user gestures / movement.
-  final _cameraZoom = StreamController<double>.broadcast();
+  /// Camera zoom level after end of user gestures / movement.
+  final _cameraZoomController = StreamController<double>.broadcast();
 
   /// Outputs.
   Stream<Map<MarkerId, Marker>> get markers => _markerController.stream;
-  Stream<double> get cameraZoom => _cameraZoom.stream;
+  Stream<double> get cameraZoom => _cameraZoomController.stream;
 
   /// Inputs.
   Function(Map<MarkerId, Marker>) get addMarkers => _markerController.sink.add;
-  Function(double) get setCameraZoom => _cameraZoom.sink.add;
+  Function(double) get setCameraZoom => _cameraZoomController.sink.add;
 
   /// Internal listener.
   StreamSubscription _cameraZoomSubscription;
@@ -60,7 +60,7 @@ class MainBloc {
     _cameraZoomSubscription.cancel();
 
     _markerController.close();
-    _cameraZoom.close();
+    _cameraZoomController.close();
   }
 
   _buildMediaPool() async {
