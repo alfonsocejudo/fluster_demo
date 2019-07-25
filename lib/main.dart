@@ -46,6 +46,7 @@ class _MyHomePageState extends State<MyHomePage> {
     target: LatLng(40.730183, -73.990793),
     zoom: 12.0,
   );
+  double _currentZoom = 12.0;
 
   @override
   void didChangeDependencies() {
@@ -67,6 +68,7 @@ class _MyHomePageState extends State<MyHomePage> {
             mapType: MapType.normal,
             initialCameraPosition: _initialCameraPosition,
             onMapCreated: _onMapCreated,
+            onCameraMove: _onCameraMove,
             onCameraIdle: _onCameraIdle,
             myLocationEnabled: false,
             markers:
@@ -81,8 +83,12 @@ class _MyHomePageState extends State<MyHomePage> {
     _mapController = controller;
   }
 
-  void _onCameraIdle() async {
-    var latLngBounds = await _mapController.getVisibleRegion();
-    _bloc.setCameraBounds(latLngBounds);
+  // May be called as often as every frame, so just track the last zoom value.
+  void _onCameraMove(CameraPosition cameraPosition) {
+    _currentZoom = cameraPosition.zoom;
+  }
+
+  void _onCameraIdle() {
+    _bloc.setCameraZoom(_currentZoom);
   }
 }

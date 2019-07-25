@@ -25,21 +25,21 @@ class MainBloc {
   final _markerController = StreamController<Map<MarkerId, Marker>>.broadcast();
 
   /// Camera position after user gestures / movement.
-  final _cameraBounds = StreamController<LatLngBounds>.broadcast();
+  final _cameraZoom = StreamController<double>.broadcast();
 
   /// Outputs.
   Stream<Map<MarkerId, Marker>> get markers => _markerController.stream;
-  Stream<LatLngBounds> get cameraBounds => _cameraBounds.stream;
+  Stream<double> get cameraZoom => _cameraZoom.stream;
 
   /// Inputs.
   Function(Map<MarkerId, Marker>) get addMarkers => _markerController.sink.add;
-  Function(LatLngBounds) get setCameraBounds => _cameraBounds.sink.add;
+  Function(double) get setCameraZoom => _cameraZoom.sink.add;
 
   /// Internal listener.
-  StreamSubscription _cameraBoundsSubscription;
+  StreamSubscription _cameraZoomSubscription;
 
   /// Keep track of the current Google Maps zoom level.
-  int _currentZoom = 12; // As per _initialCameraPosition in main.dart
+  var _currentZoom = 12; // As per _initialCameraPosition in main.dart
 
   /// Fluster!
   Fluster<MapMarker> _fluster;
@@ -47,22 +47,20 @@ class MainBloc {
   MainBloc() : _mediaPool = LinkedHashMap<String, MapMarker>() {
     _buildMediaPool();
 
-    _cameraBoundsSubscription = cameraBounds.listen((latLngBounds) {
-      int previousZoom = _currentZoom;
-      int nextZoom = _setCurrentZoom(latLngBounds);
+    _cameraZoomSubscription = cameraZoom.listen((zoom) {
+      if (_currentZoom != zoom.toInt()) {
+        _currentZoom = zoom.toInt();
 
-      // If the zoom changes, the clusters to display may also change.
-      if (previousZoom != nextZoom) {
         _displayMarkers(_mediaPool);
       }
     });
   }
 
   dispose() {
-    _cameraBoundsSubscription.cancel();
+    _cameraZoomSubscription.cancel();
 
     _markerController.close();
-    _cameraBounds.close();
+    _cameraZoom.close();
   }
 
   _buildMediaPool() async {
@@ -181,63 +179,6 @@ class MainBloc {
     var image = images.decodeImage(bytes);
 
     return images.copyResize(image, width: width, height: height);
-  }
-
-  /// Until the Flutter Google Maps exposes current display properties,
-  /// calculate the zoom level manually.
-  int _setCurrentZoom(LatLngBounds latLngBounds) {
-    var southwest = latLngBounds.southwest;
-    var northeast = latLngBounds.northeast;
-
-    double latDelta = (southwest.latitude - northeast.latitude).abs();
-
-    if (latDelta < 0.0004) {
-      _currentZoom = 21;
-    } else if (latDelta < 0.0008) {
-      _currentZoom = 20;
-    } else if (latDelta < 0.0015) {
-      _currentZoom = 19;
-    } else if (latDelta < 0.003) {
-      _currentZoom = 18;
-    } else if (latDelta < 0.0059) {
-      _currentZoom = 17;
-    } else if (latDelta < 0.0118) {
-      _currentZoom = 16;
-    } else if (latDelta < 0.0236) {
-      _currentZoom = 15;
-    } else if (latDelta < 0.0471) {
-      _currentZoom = 14;
-    } else if (latDelta < 0.0942) {
-      _currentZoom = 13;
-    } else if (latDelta < 0.189) {
-      _currentZoom = 12;
-    } else if (latDelta < 0.377) {
-      _currentZoom = 11;
-    } else if (latDelta < 0.753) {
-      _currentZoom = 10;
-    } else if (latDelta < 1.51) {
-      _currentZoom = 9;
-    } else if (latDelta < 3.03) {
-      _currentZoom = 8;
-    } else if (latDelta < 6.19) {
-      _currentZoom = 7;
-    } else if (latDelta < 12.7) {
-      _currentZoom = 6;
-    } else if (latDelta < 27) {
-      _currentZoom = 5;
-    } else if (latDelta < 54) {
-      _currentZoom = 4;
-    } else if (latDelta < 107) {
-      _currentZoom = 3;
-    } else if (latDelta < 160) {
-      _currentZoom = 2;
-    } else if (latDelta < 180) {
-      _currentZoom = 1;
-    } else {
-      _currentZoom = 0;
-    }
-
-    return _currentZoom;
   }
 
   /// Hard-coded example of what could be returned from some API call.
